@@ -7,7 +7,15 @@ add_definitions(-std=c++11)
 set(CXX_FLAGS "-Wall")
 set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
-set(sources src/ukf.cpp src/main.cpp src/tools.cpp)
+set(sources
+    src/main.cpp
+    src/tools.cpp
+    src/tools.h
+    src/Ukf.hpp
+    src/Ukf.cpp
+    src/MotionUkf.hpp
+    src/MotionUkf.cpp)
+
 
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
@@ -22,5 +30,7 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
 
 add_executable(UnscentedKF ${sources})
+find_library(WS_LIB uWS HINTS ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 target_link_libraries(UnscentedKF z ssl uv uWS)
+target_include_directories(ExtendedKF PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
