@@ -9,12 +9,14 @@ set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
 set(sources
     src/main.cpp
+    src/MeasurementPackage.hpp
+    src/MeasurementPackage.cpp
+    src/MotionUkf.hpp
+    src/MotionUkf.cpp
     src/tools.cpp
     src/tools.h
     src/Ukf.hpp
-    src/Ukf.cpp
-    src/MotionUkf.hpp
-    src/MotionUkf.cpp)
+    src/Ukf.cpp)
 
 
 
@@ -33,4 +35,4 @@ add_executable(UnscentedKF ${sources})
 find_library(WS_LIB uWS HINTS ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
 target_link_libraries(UnscentedKF z ssl uv uWS)
-target_include_directories(ExtendedKF PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
+target_include_directories(UnscentedKF PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
