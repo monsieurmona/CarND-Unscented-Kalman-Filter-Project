@@ -2,7 +2,6 @@
 #include <iostream>
 #include "json.hpp"
 #include <math.h>
-#include "MeasurementPackage.hpp"
 #include "MotionUkf.hpp"
 #include "tools.h"
 
@@ -40,6 +39,7 @@ int main()
    vector<VectorXd> ground_truth;
 
    h.onMessage([&ukf,&tools,&estimations,&ground_truth](uWS::WebSocket<uWS::SERVER> ws, char *data, size_t length, uWS::OpCode opCode) {
+      (void)opCode;
       // "42" at the start of the message means there's a websocket message event.
       // The 4 signifies a websocket message
       // The 2 signifies a websocket event
@@ -59,37 +59,25 @@ int main()
 
                string sensor_measurment = j[1]["sensor_measurement"];
 
-               MeasurementPackage meas_package;
                istringstream iss(sensor_measurment);
-               long long timestamp;
+               long long timestamp_us;
 
                // reads first element from the current line
                string sensor_type;
                iss >> sensor_type;
 
                if (sensor_type.compare("L") == 0) {
-                  meas_package.sensor_type = MeasurementPackage::LASER;
-                  meas_package.raw_measurements = VectorXd(2);
-                  double px;
-                  double py;
-                  iss >> px;
-                  iss >> py;
-                  meas_package.raw_measurements << px, py;
-                  iss >> timestamp;
-                  meas_package.timestamp = timestamp;
-               } else if (sensor_type.compare("R") == 0) {
+                  ukf.laserMeasurementModel.measurement = iss;
+                  iss >> timestamp_us;
 
-                  meas_package.sensor_type = MeasurementPackage::RADAR;
-                  meas_package.raw_measurements = VectorXd(3);
-                  double ro;
-                  double theta;
-                  double ro_dot;
-                  iss >> ro;
-                  iss >> theta;
-                  iss >> ro_dot;
-                  meas_package.raw_measurements << ro,theta, ro_dot;
-                  iss >> timestamp;
-                  meas_package.timestamp = timestamp;
+                  //Call ProcessMeasurment(meas_package) for Kalman filter
+                  ukf.processMeasurement(ukf.laserMeasurementModel, timestamp_us);
+               } else if (sensor_type.compare("R") == 0) {
+                  ukf.radarMeasurementModel.measurement = iss;
+                  iss >> timestamp_us;
+
+                  //Call ProcessMeasurment(meas_package) for Kalman filter
+                  ukf.processMeasurement(ukf.radarMeasurementModel, timestamp_us);
                }
                double x_gt;
                double y_gt;
@@ -106,17 +94,15 @@ int main()
                gt_values(3) = vy_gt;
                ground_truth.push_back(gt_values);
 
-               //Call ProcessMeasurment(meas_package) for Kalman filter
-               ukf.processMeasurement(meas_package);
 
                //Push the current estimated x,y positon from the Kalman filter's state vector
 
                VectorXd estimate(4);
 
-               double p_x = ukf.x_(0);
-               double p_y = ukf.x_(1);
-               double v  = ukf.x_(2);
-               double yaw = ukf.x_(3);
+               double p_x = ukf.x(0);
+               double p_y = ukf.x(1);
+               double v  = ukf.x(2);
+               double yaw = ukf.x(3);
 
                double v1 = cos(yaw)*v;
                double v2 = sin(yaw)*v;

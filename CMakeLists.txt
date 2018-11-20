@@ -9,8 +9,6 @@ set(CMAKE_CXX_FLAGS "${CXX_FLAGS}")
 
 set(sources
     src/main.cpp
-    src/MeasurementPackage.hpp
-    src/MeasurementPackage.cpp
     src/MotionUkf.hpp
     src/MotionUkf.cpp
     src/tools.cpp
@@ -34,5 +32,5 @@ endif(${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 add_executable(UnscentedKF ${sources})
 find_library(WS_LIB uWS HINTS ${CMAKE_CURRENT_SOURCE_DIR}/lib)
 
-target_link_libraries(UnscentedKF z ssl uv uWS)
+target_link_libraries(UnscentedKF z ssl uv "${WS_LIB}")
 target_include_directories(UnscentedKF PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include)
