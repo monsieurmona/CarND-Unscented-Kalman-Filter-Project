@@ -52,6 +52,16 @@ inline void ProcessModel::processModel(const MotionParams & x, const double d_t_
          d_t_s * x.std_yaw_dot_dot; // noise
 }
 
+constexpr long MotionUkf::RadarMeasurementModel::nRadarValues;
+
+MotionUkf::RadarMeasurementModel::RadarMeasurementModel() : m_R(nRadarValues,nRadarValues)
+{
+   m_R << pow(m_std_radr, 2), 0,                    0,
+          0,                  pow(m_std_radphi, 2), 0,
+          0,                  0,                    pow(m_std_radrd, 2);
+}
+
+
 void MotionUkf::RadarMeasurementModel::predictCovar(const Ukf<ProcessModel> & ukf, const Eigen::MatrixXd & ZSigmaPoints, const Eigen::VectorXd & z_mean, Eigen::MatrixXd & S_pred) const
 {
    S_pred.setZero(nRadarValues, nRadarValues);
@@ -81,18 +91,24 @@ void MotionUkf::RadarMeasurementModel::predictMeasurement(const Eigen::MatrixXd 
    }
 }
 
+constexpr long MotionUkf::LaserMeasurementModel::nLaserValues;
+
+MotionUkf::LaserMeasurementModel::LaserMeasurementModel() : m_L(nLaserValues,nLaserValues)
+{
+   m_L << pow(m_std_laser_pos, 2), 0,
+          0,                  pow(m_std_laser_pos, 2);
+}
+
 void MotionUkf::LaserMeasurementModel::predictCovar(const Ukf<ProcessModel> & ukf, const Eigen::MatrixXd & ZSigmaPoints, const Eigen::VectorXd & z_mean, Eigen::MatrixXd & S_pred) const
 {
-   (void)ukf;
-   (void)ZSigmaPoints;
-   (void)z_mean;
-   (void)S_pred;
+   S_pred.setZero(nLaserValues, nLaserValues);
+   ukf.predictCovar<MotionUkf::RadarMeasurementModel>(ZSigmaPoints, z_mean, S_pred);
+   S_pred += m_L;
 }
 
 
-void MotionUkf::LaserMeasurementModel::predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsRadarPred) const
+void MotionUkf::LaserMeasurementModel::predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsLaserPred) const
 {
-   (void)XSigmaPointPred;
-   (void)ZSigmaPointsRadarPred;
+   ZSigmaPointsLaserPred = XSigmaPointPred.block<nLaserValues, ProcessModel::m_nSigmaPoints>(0,0);
 }
 

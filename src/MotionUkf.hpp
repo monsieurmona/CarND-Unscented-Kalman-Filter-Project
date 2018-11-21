@@ -108,12 +108,8 @@ public:
    struct RadarMeasurementModel
    {
       using MEASUREMENT_T = RadarMeasurement;
-      RadarMeasurementModel() : m_R(3,3)
-      {
-         m_R << pow(m_std_radr, 2), 0,                    0,
-                0,                  pow(m_std_radphi, 2), 0,
-                0,                  0,                    pow(m_std_radrd, 2);
-      }
+
+      RadarMeasurementModel();
 
       static inline void normalize(const long colIdx, Eigen::MatrixXd &ZSigmaPointsDiff)
       {
@@ -127,7 +123,7 @@ public:
       void predictCovar(const Ukf<ProcessModel> & ukf, const Eigen::MatrixXd & XSigmaPoints, const Eigen::VectorXd & x_pred, Eigen::MatrixXd & P_pred) const;
       void predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsRadarPred) const;
 
-      const long nRadarValues = 3;
+      static constexpr long nRadarValues = 3;
 
       //radar measurement noise standard deviation radius in m
       const double m_std_radr = 0.3;
@@ -183,45 +179,28 @@ public:
    struct LaserMeasurementModel
    {
       using MEASUREMENT_T = LaserMeasurement;
-      LaserMeasurementModel() : m_L(3,3)
-      {
-         /*
-         m_R << pow(m_std_radr, 2), 0,                    0,
-                0,                  pow(m_std_radphi, 2), 0,
-                0,                  0,                    pow(m_std_radrd, 2);
-         */
-      }
+
+      LaserMeasurementModel();
 
       static inline void normalize(const long colIdx, Eigen::MatrixXd &ZSigmaPointsDiff)
       {
          (void)colIdx;
          (void)ZSigmaPointsDiff;
-         /*
-         double & phi = reinterpret_cast<LaserMeasurement*>(ZSigmaPointsDiff.col(colIdx).data())->phi;
-
-         // normalize phi to -/+ pi
-         phi = phi - TWO_PI * floor((phi + M_PI) / TWO_PI);
-         */
+         // nothing to normalize
       }
 
       void predictCovar(const Ukf<ProcessModel> & ukf, const Eigen::MatrixXd & XSigmaPoints, const Eigen::VectorXd & x_pred, Eigen::MatrixXd & P_pred) const;
-      void predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsRadarPred) const;
+      void predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsLaserPred) const;
 
-      /*
-      const long nRadarValues = 3;
+      //laser measurement noise standard deviation (position)
+      const double m_std_laser_pos = 0.3;
 
-      //radar measurement noise standard deviation radius in m
-      const double m_std_radr = 0.3;
-
-      //radar measurement noise standard deviation angle in rad
-      const double m_std_radphi = 0.0175;
-
-      //radar measurement noise standard deviation radius change in m/s
-      const double m_std_radrd = 0.1;
-      */
+      static constexpr long nLaserValues = 2;
 
       MEASUREMENT_T measurement;
    private:
+
+      // Laser Measurement Covariance Matrix
       Eigen::MatrixXd m_L;
    };
 

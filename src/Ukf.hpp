@@ -58,7 +58,7 @@ public:
          m_x_pred.setZero(PROCESSMODEL_T::m_n_x);
          m_P_pred.setZero(PROCESSMODEL_T::m_n_x, PROCESSMODEL_T::m_n_x);
 
-         predict<PROCESSMODEL_T>(XSigmaPoints, m_x_pred, m_P_pred);
+         predict<PROCESSMODEL_T>(m_XSigmaPointsPred, m_x_pred, m_P_pred);
       }
 
       Eigen::MatrixXd Z_pred;
