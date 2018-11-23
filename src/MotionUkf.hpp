@@ -41,6 +41,12 @@ public:
    static constexpr double TWO_PI = 2 * M_PI;
 
    static constexpr long m_nSigmaPoints = 1 + 2 * m_n_x_aug;
+
+   // Process noise standard deviation longitudinal acceleration in m/s^2
+   static constexpr double m_std_a = 0.2;
+
+   // Process noise standard deviation yaw acceleration in rad/s^2
+   static constexpr double m_std_yawdd = 0.2;
 };
 
 
@@ -129,10 +135,10 @@ public:
       const double m_std_radr = 0.3;
 
       //radar measurement noise standard deviation angle in rad
-      const double m_std_radphi = 0.0175;
+      const double m_std_radphi = 0.03;
 
       //radar measurement noise standard deviation radius change in m/s
-      const double m_std_radrd = 0.1;
+      const double m_std_radrd = 0.3;
 
       MEASUREMENT_T measurement;
    private:
@@ -192,8 +198,11 @@ public:
       void predictCovar(const Ukf<ProcessModel> & ukf, const Eigen::MatrixXd & XSigmaPoints, const Eigen::VectorXd & x_pred, Eigen::MatrixXd & P_pred) const;
       void predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsLaserPred) const;
 
-      //laser measurement noise standard deviation (position)
-      const double m_std_laser_pos = 0.3;
+      // Process noise standard deviation longitudinal acceleration in m/s^2
+      double m_std_a = 30;
+
+      //laser measurement noise standard deviation (position) in m
+      const double m_std_laser_pos = 0.15;
 
       static constexpr long nLaserValues = 2;
 
@@ -204,12 +213,27 @@ public:
       Eigen::MatrixXd m_L;
    };
 
-
-
    template<typename MEASUREMENTMODEL_T>
    void processMeasurement(const MEASUREMENTMODEL_T & measurementModel, int64_t timestamp_us)
    {
       Ukf<ProcessModel>::processMeasurement<typename MEASUREMENTMODEL_T::MEASUREMENT_T, MEASUREMENTMODEL_T>(measurementModel.measurement, measurementModel, timestamp_us);
+   }
+
+   void init(const LaserMeasurementModel & laserMeasurementModel, int64_t timestamp_us)
+   {
+      Ukf<ProcessModel>::setNewTime(timestamp_us);
+      m_x.setZero(ProcessModel::m_n_x);
+
+      // set initial x pos
+      m_x(0) = laserMeasurementModel.measurement.value(0);
+
+      // set initial y pos
+      m_x(1) = laserMeasurementModel.measurement.value(1);
+
+      // initial process noise
+      m_std.setZero(2);
+      m_std(0) = ProcessModel::m_std_a;
+      m_std(1) = ProcessModel::m_std_yawdd;
    }
 
    RadarMeasurementModel radarMeasurementModel;

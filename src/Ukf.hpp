@@ -21,6 +21,8 @@ public:
       , m_P(m_n_x, m_n_x)
       , m_previousTimestampUs(0)
    {
+      m_x.setZero();
+      m_P.setZero();
    }
 
    ~Ukf() {}
@@ -239,10 +241,8 @@ protected:
    // weights for prediction
    const Eigen::ArrayXd m_weights;
 
-
    // set standard deviation - process noise
-   Eigen::Vector2d m_std;
-
+   Eigen::VectorXd m_std;
 
    // object state
    Eigen::VectorXd m_x;
