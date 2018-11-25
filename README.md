@@ -65,7 +65,7 @@ Matlab scripts that can generate additional data.
 
 # Results
 
-![Track - Unscented Kalman Filter](NIS/track.png)
+![Track - Unscented Kalman Filter](evalNIS/track.png)
 
 The red circles are lidar measurements, blue circles are the positions inferred from radar measurements (radius and angle). 
 and green triangles are the estimated car's position by the Unscented Kalman Filter.
@@ -86,7 +86,7 @@ The threshold would be then for radar measurements 7.82 and 5.99 for lidar measu
 
 The chosen acceleration parameters seem to be right, as shown in the picture below.
 
-![NIS Graphs for Lidar and Radar Measurements](NIS/NIS.png)
+![NIS Graphs for Lidar and Radar Measurements](evalNIS/NIS.png)
  
  
  
