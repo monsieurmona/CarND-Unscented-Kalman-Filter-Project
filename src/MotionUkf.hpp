@@ -1,3 +1,8 @@
+/*
+ * Author: Mario Lüder
+ * Date: Nov. 2018
+ */
+
 #ifndef MOTIONUKF_HPP
 #define MOTIONUKF_HPP
 

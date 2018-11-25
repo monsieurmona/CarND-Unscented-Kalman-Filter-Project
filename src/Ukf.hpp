@@ -1,3 +1,8 @@
+/*
+ * Author: Mario Lüder
+ * Date: Nov. 2018
+ */
+
 #ifndef UKF_HPP
 #define UKF_HPP
 

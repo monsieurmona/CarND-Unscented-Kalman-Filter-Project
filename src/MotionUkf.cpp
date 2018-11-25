@@ -1,3 +1,8 @@
+/*
+ * Author: Mario Lüder
+ * Date: Nov. 2018
+ */
+
 #include "MotionUkf.hpp"
 
 #include <math.h>

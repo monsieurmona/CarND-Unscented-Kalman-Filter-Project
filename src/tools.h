@@ -12,17 +12,12 @@ public:
   /**
   * Constructor.
   */
-  Tools();
-
-  /**
-  * Destructor.
-  */
-  virtual ~Tools();
+  Tools() = delete;
 
   /**
   * A helper method to calculate RMSE.
   */
-  VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
+  static VectorXd CalculateRMSE(const vector<VectorXd> &estimations, const vector<VectorXd> &ground_truth);
 
   // normalize angle to -/+ pi
   static inline void normalizeAngle(double & angle)
