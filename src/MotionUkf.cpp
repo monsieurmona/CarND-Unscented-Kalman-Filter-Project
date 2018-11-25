@@ -24,7 +24,7 @@ inline void ProcessModel::processModel(const MotionParams & x, const double d_t_
    const double one_half_dt2 = one_half * pow(d_t_s, 2);
 
    // predict position
-   if (fabs(x.yaw_dot) > 0.001)
+   if (fabs(x.yaw_dot) > 0.0001)
    {
       x_pred.p_x = x.p_x + (x.v / x.yaw_dot) * (sin(x.yaw + x.yaw_dot * d_t_s) - sin(x.yaw));
       x_pred.p_y = x.p_y + (x.v / x.yaw_dot) * (cos(x.yaw) - cos(x.yaw + x.yaw_dot * d_t_s));

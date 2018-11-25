@@ -13,10 +13,7 @@ set(sources
     src/MotionUkf.cpp
     src/tools.cpp
     src/tools.h
-    src/Ukf.hpp
-    src/Ukf.cpp)
-
-
+    src/Ukf.hpp)
 
 if(${CMAKE_SYSTEM_NAME} MATCHES "Darwin") 
 

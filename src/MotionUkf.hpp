@@ -2,6 +2,7 @@
 #define MOTIONUKF_HPP
 
 #include "Ukf.hpp"
+#include "tools.h"
 
 #include <Eigen/Dense>
 #include <sstream>
@@ -25,7 +26,7 @@ public:
       double & yaw = XSigmaPointsDiff.col(colIdx)(3);
 
       // normalize phi to -/+ pi
-      yaw = yaw - TWO_PI * floor((yaw + M_PI) / TWO_PI);
+      Tools::normalizeAngle(yaw);
    }
 
    static void predictSigmaPoints(const Eigen::MatrixXd & XSigmaPoints, const double d_t_s, Eigen::MatrixXd & XSigmaPointsPred);
@@ -43,10 +44,12 @@ public:
    static constexpr long m_nSigmaPoints = 1 + 2 * m_n_x_aug;
 
    // Process noise standard deviation longitudinal acceleration in m/s^2
-   static constexpr double m_std_a = 0.2;
+   // static constexpr double m_std_a = 0.2;
+   static constexpr double m_std_a = 1.5;
 
    // Process noise standard deviation yaw acceleration in rad/s^2
-   static constexpr double m_std_yawdd = 0.2;
+   // static constexpr double m_std_yawdd = 0.2;
+   static constexpr double m_std_yawdd = 1;
 };
 
 
@@ -123,8 +126,27 @@ public:
          double & phi = RadarMeasurement::cast(ZSigmaPointsDiff.col(colIdx).data())->phi;
 
          // normalize phi to -/+ pi
-         phi = phi - TWO_PI * floor((phi + M_PI) / TWO_PI);
+         Tools::normalizeAngle(phi);
       }
+
+      static inline void normalize(Eigen::MatrixXd &matrix)
+      {
+         const int cols = matrix.cols();
+
+         for (int colIdx = 0; colIdx < cols; ++colIdx)
+         {
+            normalize(colIdx, matrix);
+         }
+      }
+
+      static inline void normalize(Eigen::VectorXd &vector)
+      {
+         double & phi = RadarMeasurement::cast(vector.data())->phi;
+
+         // normalize phi to -/+ pi
+         Tools::normalizeAngle(phi);
+      }
+
 
       void predictCovar(const Ukf<ProcessModel> & ukf, const Eigen::MatrixXd & XSigmaPoints, const Eigen::VectorXd & x_pred, Eigen::MatrixXd & P_pred) const;
       void predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsRadarPred) const;
@@ -141,6 +163,10 @@ public:
       const double m_std_radrd = 0.3;
 
       MEASUREMENT_T measurement;
+
+      // NIS
+      double m_nis = 0.0;
+
    private:
       Eigen::MatrixXd m_R;
    };
@@ -195,6 +221,16 @@ public:
          // nothing to normalize
       }
 
+      static inline void normalize(Eigen::MatrixXd &matrix)
+      {
+         (void)matrix;
+      }
+
+      static inline void normalize(Eigen::VectorXd &vector)
+      {
+         (void)vector;
+      }
+
       void predictCovar(const Ukf<ProcessModel> & ukf, const Eigen::MatrixXd & XSigmaPoints, const Eigen::VectorXd & x_pred, Eigen::MatrixXd & P_pred) const;
       void predictMeasurement(const Eigen::MatrixXd & XSigmaPointPred, Eigen::MatrixXd & ZSigmaPointsLaserPred) const;
 
@@ -207,6 +243,9 @@ public:
       static constexpr long nLaserValues = 2;
 
       MEASUREMENT_T measurement;
+
+      // NIS
+      double m_nis = 0.0;
    private:
 
       // Laser Measurement Covariance Matrix
@@ -214,7 +253,7 @@ public:
    };
 
    template<typename MEASUREMENTMODEL_T>
-   void processMeasurement(const MEASUREMENTMODEL_T & measurementModel, int64_t timestamp_us)
+   void processMeasurement(MEASUREMENTMODEL_T & measurementModel, int64_t timestamp_us)
    {
       Ukf<ProcessModel>::processMeasurement<typename MEASUREMENTMODEL_T::MEASUREMENT_T, MEASUREMENTMODEL_T>(measurementModel.measurement, measurementModel, timestamp_us);
    }
@@ -230,7 +269,7 @@ public:
       // set initial y pos
       m_x(1) = laserMeasurementModel.measurement.value(1);
 
-      // initial process noise
+      // initialize process noise
       m_std.setZero(2);
       m_std(0) = ProcessModel::m_std_a;
       m_std(1) = ProcessModel::m_std_yawdd;

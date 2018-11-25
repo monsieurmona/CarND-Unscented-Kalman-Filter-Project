@@ -22,7 +22,7 @@ public:
       , m_previousTimestampUs(0)
    {
       m_x.setZero();
-      m_P.setZero();
+      m_P.setIdentity();
    }
 
    ~Ukf() {}
@@ -32,9 +32,8 @@ public:
    Ukf & operator=(Ukf & ukf) = delete;
    Ukf & operator=(Ukf && ukf) = delete;
 
-
    template<typename MEASUREMENT_T, typename MEASUREMENTMODEL_T>
-   void processMeasurement(const MEASUREMENT_T & z_measurement, const MEASUREMENTMODEL_T & measurementModel, int64_t timestamp_us)
+   void processMeasurement(const MEASUREMENT_T & z_measurement, MEASUREMENTMODEL_T & measurementModel, int64_t timestamp_us)
    {
       const int64_t dt_us = setNewTime(timestamp_us);
 
@@ -45,10 +44,6 @@ public:
          const double dt_s = dt_us / 1000000.0;	//dt - expressed in seconds
 
          // generate augumented sigma points from last state
-
-         // TODO find out if sigma points must be generated again
-         // it might be enough to use the predicted sigma points
-         // from last round
          Eigen::MatrixXd XSigmaPoints;
          generateAugumentedSigmaPoints(m_x, m_P, m_std, XSigmaPoints);
 
@@ -79,15 +74,21 @@ public:
 
       // Cross Correlation Matrix
       Eigen::MatrixXd Tc;
-      calculateCrosscorrelationMatix(m_XSigmaPointsPred, Z_pred, m_x_pred, z_pred, Tc);
+      calculateCrosscorrelationMatix<MEASUREMENTMODEL_T>(m_XSigmaPointsPred, Z_pred, m_x_pred, z_pred, Tc);
 
       // Kalman Gain
       Eigen::MatrixXd K;
       calculateKalmanGain(Tc, S_cov, K);
 
       // update state and covariance matrix
-      updateState(K, z_measurement, z_pred, m_x_pred);
+      Eigen::VectorXd z_residual = z_measurement.value - z_pred;
+      MEASUREMENTMODEL_T::normalize(z_residual);
+
+      updateState(K, z_residual, m_x_pred);
       updateCovariance(K, S_cov, m_P_pred);
+
+      // compute NIS
+      measurementModel.m_nis = computeNIS(z_residual, S_cov);
 
       std::swap(m_x_pred, m_x);
       std::swap(m_P_pred, m_P);
@@ -100,7 +101,6 @@ public:
 
       for (long colIdx = 0; colIdx < PROCESSMODEL_T::m_nSigmaPoints; ++colIdx)
       {
-         // TODO move down
          MODEL_T::normalize(colIdx, SigmaPointsDiff);
 
          Eigen::MatrixXd cov_pred_sigmaPoint = (SigmaPointsDiff.col(colIdx).array() * m_weights(colIdx)).matrix() *
@@ -184,34 +184,34 @@ protected:
    }
 
 
-   void weightedMean(const Eigen::MatrixXd & XSigmaPoints, Eigen::VectorXd &x_pred)
+   inline void weightedMean(const Eigen::MatrixXd & XSigmaPoints, Eigen::VectorXd &x_pred)
    {
       x_pred = (XSigmaPoints.array().rowwise() * m_weights.transpose()).rowwise().sum();
    }
 
-
-   void calculateCrosscorrelationMatix(const Eigen::MatrixXd & XSigmaPointsPred, const Eigen::MatrixXd & ZSigmaPointsPred, const Eigen::VectorXd & x_mean, const Eigen::VectorXd & z_mean, Eigen::MatrixXd & T)
+   template<typename MEASUREMENTMODEL_T>
+   inline void calculateCrosscorrelationMatix(const Eigen::MatrixXd & XSigmaPointsPred, const Eigen::MatrixXd & ZSigmaPointsPred, const Eigen::VectorXd & x_mean, const Eigen::VectorXd & z_mean, Eigen::MatrixXd & T)
    {
-      const Eigen::MatrixXd X = (XSigmaPointsPred.colwise() - x_mean);
-      const Eigen::MatrixXd Z = (ZSigmaPointsPred.colwise() - z_mean);
+      Eigen::MatrixXd X = (XSigmaPointsPred.colwise() - x_mean);
+      // MEASUREMENTMODEL_T::normalize(X);
+      Eigen::MatrixXd Z = (ZSigmaPointsPred.colwise() - z_mean);
+      // MEASUREMENTMODEL_T::normalize(Z);
       const Eigen::MatrixXd X_weighted = X.array().rowwise() * m_weights.transpose();
       T = (X_weighted * Z.transpose());
    }
 
-   void calculateKalmanGain(const Eigen::MatrixXd & T, const Eigen::MatrixXd & S, Eigen::MatrixXd & K)
+   inline void calculateKalmanGain(const Eigen::MatrixXd & T, const Eigen::MatrixXd & S, Eigen::MatrixXd & K)
    {
       K = T * S.inverse();
    }
 
-   template <typename MEASUREMENT_T>
-   //void updateState(const Eigen::MatrixXd & K, const Eigen::VectorXd & z, const Eigen::VectorXd & z_pred, Eigen::VectorXd & x_pred)
-   void updateState(const Eigen::MatrixXd & K, const MEASUREMENT_T & z, const Eigen::VectorXd & z_pred, Eigen::VectorXd & x_pred)
+   inline void updateState(const Eigen::MatrixXd & K, const Eigen::VectorXd & z_residual, Eigen::VectorXd & x_pred)
    {
       Eigen::VectorXd & x_update = x_pred;
-      x_update = x_pred + K * (z.value - z_pred);
+      x_update = x_pred + K * z_residual;
    }
 
-   void updateCovariance(const Eigen::MatrixXd & K, const Eigen::MatrixXd & S, Eigen::MatrixXd & P_pred) const
+   inline void updateCovariance(const Eigen::MatrixXd & K, const Eigen::MatrixXd & S, Eigen::MatrixXd & P_pred) const
    {
       Eigen::MatrixXd & P_update = P_pred;
       P_update = P_pred - K * S * K.transpose();
@@ -234,6 +234,11 @@ protected:
       return dt;
    }
 
+   inline double computeNIS(const Eigen::VectorXd z_diff, const Eigen::MatrixXd & S)
+   {
+      const double nis = z_diff.transpose() * S.inverse() * z_diff;
+      return nis;
+   }
 
    //define spreading parameter
    const double m_lambda;

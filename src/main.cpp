@@ -60,7 +60,7 @@ int main()
                // j[1] is the data JSON object
 
                string sensor_measurment = j[1]["sensor_measurement"];
-               std::cout << sensor_measurment << std::endl;
+               // std::cout << sensor_measurment << std::endl;
 
                istringstream iss(sensor_measurment);
                long long timestamp_us;
@@ -77,6 +77,7 @@ int main()
                   if (is_init)
                   {
                      ukf.processMeasurement(ukf.laserMeasurementModel, timestamp_us);
+                     std::cout << "NIS_Laser\t" << ukf.laserMeasurementModel.m_nis << std::endl;
                   }
                   else
                   {
@@ -89,6 +90,7 @@ int main()
 
                   //Call ProcessMeasurment(meas_package) for Kalman filter
                   ukf.processMeasurement(ukf.radarMeasurementModel, timestamp_us);
+                  std::cout << "NIS_Radar\t" << ukf.radarMeasurementModel.m_nis << std::endl;
                }
                double x_gt;
                double y_gt;
@@ -135,7 +137,7 @@ int main()
                msgJson["rmse_vx"] = RMSE(2);
                msgJson["rmse_vy"] = RMSE(3);
                auto msg = "42[\"estimate_marker\"," + msgJson.dump() + "]";
-               std::cout << msg << std::endl;
+               // std::cout << msg << std::endl;
                ws.send(msg.data(), msg.length(), uWS::OpCode::TEXT);
 
             }
