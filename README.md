@@ -17,26 +17,23 @@ Once the install for uWebSocketIO is complete, the main program can be built and
 
 Tips for setting up your environment can be found [here](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/f758c44c-5e40-4e01-93b5-1a82aa4e044f/concepts/23d376c7-0195-4276-bdf0-e02f1f3c665d)
 
-Note that the programs that need to be written to accomplish the project are src/ukf.cpp, src/ukf.h, tools.cpp, and tools.h
-
-The program main.cpp has already been filled out, but feel free to modify it.
-
 Here is the main protcol that main.cpp uses for uWebSocketIO in communicating with the simulator.
-
 
 INPUT: values provided by the simulator to the c++ program
 
+```
 ["sensor_measurement"] => the measurment that the simulator observed (either lidar or radar)
-
+```
 
 OUTPUT: values provided by the c++ program to the simulator
-
+```
 ["estimate_x"] <= kalman filter estimated position x
 ["estimate_y"] <= kalman filter estimated position y
 ["rmse_x"]
 ["rmse_y"]
 ["rmse_vx"]
 ["rmse_vy"]
+```
 
 ---
 
@@ -60,33 +57,36 @@ OUTPUT: values provided by the c++ program to the simulator
 4. Run it: `./UnscentedKF` Previous versions use i/o from text files.  The current state uses i/o
 from the simulator.
 
-## Editor Settings
-
-We've purposefully kept editor configuration files out of this repo in order to
-keep it as simple and environment agnostic as possible. However, we recommend
-using the following settings:
-
-* indent using spaces
-* set tab width to 2 spaces (keeps the matrices in source code aligned)
-
-## Code Style
-
-Please stick to [Google's C++ style guide](https://google.github.io/styleguide/cppguide.html) as much as possible.
-
 ## Generating Additional Data
-
-This is optional!
 
 If you'd like to generate your own radar and lidar data, see the
 [utilities repo](https://github.com/udacity/CarND-Mercedes-SF-Utilities) for
 Matlab scripts that can generate additional data.
 
-## Project Instructions and Rubric
+# Results
 
-This information is only accessible by people who are already enrolled in Term 2
-of CarND. If you are enrolled, see [the project page](https://classroom.udacity.com/nanodegrees/nd013/parts/40f38239-66b6-46ec-ae68-03afd8a601c8/modules/0949fca6-b379-42af-a919-ee50aa304e6a/lessons/c3eb3583-17b2-4d83-abf7-d852ae1b9fff/concepts/f437b8b0-f2d8-43b0-9662-72ac4e4029c1)
-for instructions and the project rubric.
+![Track - Unscented Kalman Filter](NIS/track.png)
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+The red circles are lidar measurements, blue circles are the positions inferred from radar measurements (radius and angle). 
+and green triangles are the estimated car's position by the Unscented Kalman Filter.
 
+The process model "constant turn rate and velocity magnitude" (CTRV) is used for Kalman filter's predict step. 
+It tracks a state vector of 5 dimensions: x position, y position, velocity, yaw angle, and yaw rate. 
+
+To predict the state for a new measurement the velocity magnitude and yaw rate are assumed to be constant.
+However, a random velocity acceleration and yaw acceleration might change the velocity and yaw rate. 
+These two accelaration values can be chosen by reasoning and experiment. A car may accelerate with 1.5m/t^2 
+and change the yaw rate with 1 rad/t^2. 
+
+To check if the these values are a good choice one may use "normalized information squared" or NIS statistic. 
+The NIS values computed from predicted measurements should not exceed the 95% level of significance of the 
+[chi-square distribution](http://uregina.ca/~gingrich/appchi.pdf). It is acceptable if some exceed this level,
+but the majority should be below. The degree of freedom is 3 for radar measurement and 2 for lidar measurements. 
+The threshold would be then for radar measurements 7.82 and 5.99 for lidar measurements.
+
+The chosen acceleration parameters seem to be right, as shown in the picture below.
+
+![NIS Graphs for Lidar and Radar Measurements](NIS/NIS.png)
+ 
+ 
+ 
